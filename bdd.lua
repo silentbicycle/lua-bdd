@@ -88,10 +88,15 @@ function dotPP(D)
    printf("}\n")
 end
 
--- Look up the {v, l, h} -> ID pair in H, or return nil.
+-- Look up the {v, l, h} -> n_id mapping in H, or return nil.
 local function lookup(H, v, l, h)
    local vt = H[v]
-   if not vt then return nil end
+   if vt then
+      local ls = vt[l]
+      if ls then
+         return ls[h]
+      end
+   end
 end
 
 -- add a new node n_id to T with {v, l, h}
@@ -101,10 +106,13 @@ local function add(T, v, l, h)
    return n_id
 end
 
--- add {v, l, h} -> n_id mapping to H
+-- add v -> (l -> (h -> n_id)) mapping to H
 local function insert(H, v, l, h, n_id)
    local vs = H[v] or {}
-   vs[#vs+1] = {l, h, n_id}
+   H[v] = vs
+   local ls = vs[l] or {}
+   vs[l] = ls
+   ls[h] = n_id
 end
 
 local function mk(D, v, l, h)
@@ -113,10 +121,10 @@ local function mk(D, v, l, h)
    if l == h then return l end
 
    -- already known, re-use it
-   local var_id = lookup(D.H, v, l, h)
-   if var_id then return var_id end
+   local n_id = lookup(D.H, v, l, h)
+   if n_id then return n_id end
 
-   local n_id = add(D.T, v, l, h)
+   n_id = add(D.T, v, l, h)
    insert(D.H, v, l, h, n_id)
    return n_id
 end
