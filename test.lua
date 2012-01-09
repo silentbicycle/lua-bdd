@@ -766,6 +766,10 @@ function test_nqueens_8()
    check_nq_sol(8)
 end
 
+function test_nqueens_9()
+   check_nq_sol(9)
+end
+
 function test_nqueens_10()
    check_nq_sol(10)
 end
