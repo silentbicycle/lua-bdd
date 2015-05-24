@@ -283,25 +283,13 @@ function exec(bdd, bits)
    local n_id = bdd.start
    local T = bdd.T
 
-   for i=1,#bits do
+   while 1 < n_id do
       local row = T[n_id]
-      if row.v == i then
-         local next = (bits[i] and row.t or row.f)
-         log("var %d: node %d -> node %d\n", i, n_id, next)
-         
-         if next < 2 then
-            log("reached end result: %d\n", next)
-            return next == 1 and 1 or 0
-         end
-         n_id = next
-      else
-         log("skipping var %d\n", i)
-      end
+      local next = bits[row.v] and row.t or row.f
+      log("var %d: node %d -> node %d\n", i, n_id, next)
+      n_id = next
    end
-   if n_id < 2 then
-      return T[n_id].t
-   end
-   return nil, "error"
+   return n_id
 end
 
 function satcount(bdd, start)
