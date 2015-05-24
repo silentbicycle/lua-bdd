@@ -43,11 +43,12 @@ end
 -- H is a { var, low, high} -> node ID reverse lookup table for T,
 --    structured as H[var][low][high] = node ID.
 -- start is initially nil; when filled in, it'll be the BDD's root node ID.
+-- The 0 and 1 node IDs must denote false and true; other code depends on this.
 local function init(vs)
    assert(vs)
    local T = {}
-   T[0] = { v=vs + 1, f=0, t=0 }     -- always false
-   T[1] = { v=vs + 1, f=1, t=1 }     -- always true
+   T[0] = { v=vs + 1, f=0, t=0 }
+   T[1] = { v=vs + 1, f=1, t=1 }
    local H = {}
    return {T=T, H=H, vars=vs}
 end
