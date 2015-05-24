@@ -36,17 +36,19 @@ local function log(...)
 end
 
 -- Init the data store.
+-- Its BDDs will use var IDs in 1..vs, where lower-numbered vars live
+--    closer to the root in traversals.
 -- T is an array of nodes mapping the node ID to
---    a { var_id, low node ID, high node ID} tuple.
--- 
+--    a { v=var_id, f=low node ID, t=high node ID} table.
 -- H is a { var, low, high} -> node ID reverse lookup table for T,
---    structured as H[v] -> ( {l, h, node_id} array ).
---
+--    structured as H[var][low][high] = node ID.
+-- start is initially nil; when filled in, it'll be the BDD's root node ID.
+-- The 0 and 1 node IDs must denote false and true; other code depends on this.
 local function init(vs)
    assert(vs)
    local T = {}
-   T[0] = { v=vs + 1, f=0, t=0 }     -- always false
-   T[1] = { v=vs + 1, f=1, t=1 }     -- always true
+   T[0] = { v=vs + 1, f=0, t=0 }
+   T[1] = { v=vs + 1, f=1, t=1 }
    local H = {}
    return {T=T, H=H, vars=vs}
 end
@@ -106,7 +108,7 @@ local function add(T, v, l, h)
    return n_id
 end
 
--- add v -> (l -> (h -> n_id)) mapping to H
+-- add {v, l, h} -> n_id mapping to H
 local function insert(H, v, l, h, n_id)
    local vs = H[v] or {}
    H[v] = vs
@@ -129,7 +131,9 @@ local function mk(D, v, l, h)
    return n_id
 end
 
--- take a true/false/nil array (with known max) and convert it to a BDD.
+-- take a true/false/nil array (with known max) and convert it to a
+-- BDD whose value is true just when the array's non-nil vars have the
+-- corresponding values.
 function build(t, vars)
    local D = init(vars)
    local function b(i)
@@ -280,25 +284,13 @@ function exec(bdd, bits)
    local n_id = bdd.start
    local T = bdd.T
 
-   for i=1,#bits do
+   while 1 < n_id do
       local row = T[n_id]
-      if row.v == i then
-         local next = (bits[i] and row.t or row.f)
-         log("var %d: node %d -> node %d\n", i, n_id, next)
-         
-         if next < 2 then
-            log("reached end result: %d\n", next)
-            return next == 1 and 1 or 0
-         end
-         n_id = next
-      else
-         log("skipping var %d\n", i)
-      end
+      local next = bits[row.v] and row.t or row.f
+      log("var %d: node %d -> node %d\n", i, n_id, next)
+      n_id = next
    end
-   if n_id < 2 then
-      return T[n_id].t
-   end
-   return nil, "error"
+   return n_id
 end
 
 function satcount(bdd, start)
