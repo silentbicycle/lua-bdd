@@ -36,12 +36,13 @@ local function log(...)
 end
 
 -- Init the data store.
+-- Its BDDs will use var IDs in 1..vs, where lower-numbered vars live
+--    closer to the root in traversals.
 -- T is an array of nodes mapping the node ID to
---    a { var_id, low node ID, high node ID} tuple.
--- 
+--    a { v=var_id, f=low node ID, t=high node ID} table.
 -- H is a { var, low, high} -> node ID reverse lookup table for T,
---    structured as H[v] -> ( {l, h, node_id} array ).
---
+--    structured as H[var][low][high] = node ID.
+-- start is initially nil; when filled in, it'll be the BDD's root node ID.
 local function init(vs)
    assert(vs)
    local T = {}
@@ -106,7 +107,7 @@ local function add(T, v, l, h)
    return n_id
 end
 
--- add v -> (l -> (h -> n_id)) mapping to H
+-- add {v, l, h} -> n_id mapping to H
 local function insert(H, v, l, h, n_id)
    local vs = H[v] or {}
    H[v] = vs
@@ -129,7 +130,9 @@ local function mk(D, v, l, h)
    return n_id
 end
 
--- take a true/false/nil array (with known max) and convert it to a BDD.
+-- take a true/false/nil array (with known max) and convert it to a
+-- BDD whose value is true just when the array's non-nil vars have the
+-- corresponding values.
 function build(t, vars)
    local D = init(vars)
    local function b(i)
